@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Foundry Line — Tactical FPS</title>
+<link rel="stylesheet" href="./style.css">
+<script type="importmap">
+{"imports": {"three": "./vendor/three/three.module.min.js"}}
+</script>
+</head>
+<body>
+<canvas id="game-canvas"></canvas>
+
+<!-- ============ IN-GAME HUD ============ -->
+<div id="hud" style="display:none">
+  <div id="topbar">
+    <div class="team-score raiders"><span id="score-raiders">0</span><span class="team-name">RAIDERS</span><span id="pips-raiders" class="pips"></span></div>
+    <div id="timer-box"><div id="timer-label">ROUND</div><div id="timer">1:40</div><div id="round-num">ROUND 1</div></div>
+    <div class="team-score sentinels"><span id="pips-sentinels" class="pips"></span><span class="team-name">SENTINELS</span><span id="score-sentinels">0</span></div>
+  </div>
+  <div id="bomb-line"><span id="bomb-status"></span><span id="bomb-bar"><span id="bomb-bar-fill"></span></span></div>
+  <div id="money-box">$<span id="money">800</span><span id="charge-tag" title="You carry the charge">◆ CHARGE</span></div>
+  <canvas id="minimap" width="192" height="144"></canvas>
+  <div id="killfeed"></div>
+
+  <div id="vitals">
+    <div id="hp-row"><span id="hp-num">100</span><span class="vitals-label">HP</span><span id="hp-bar"><span id="hp-fill"></span></span></div>
+    <div id="armor-row"><span class="vitals-label">ARMOUR</span><span id="armor-num">0</span></div>
+  </div>
+  <div id="ammo-box">
+    <div id="weapon-name">P9 Sidearm</div>
+    <div id="ammo-row"><span id="ammo-mag">12</span><span id="ammo-reserve">/ 48</span></div>
+  </div>
+
+  <div id="crosshair"><i class="cl t"></i><i class="cl b"></i><i class="cl l"></i><i class="cl r"></i><i class="dot"></i></div>
+  <div id="hitmarker" style="display:none"><i class="hm a"></i><i class="hm b"></i><i class="hm c"></i><i class="hm d"></i></div>
+  <div id="scope" style="display:none"></div>
+  <div id="interact-prompt" style="display:none"></div>
+  <div id="channel-bar" style="display:none"><div id="channel-label">PLANTING…</div><div id="channel-track"><span id="channel-fill"></span></div></div>
+  <div id="toast" style="display:none"></div>
+  <div id="banner" style="display:none"><div id="banner-title"></div><div id="banner-sub"></div></div>
+  <div id="spec-msg" style="display:none">You are down — the round plays on. You redeploy next round.</div>
+  <div id="damage-vignette" style="opacity:0"></div>
+  <div id="damage-dir" style="display:none"></div>
+  <div id="hint-bar">WASD move · Mouse aim · LMB fire · RMB aim · R reload · 1–5 weapons · F plant / defuse · B buy · Shift walk · Ctrl crouch · Tab scores</div>
+
+  <div id="buy-menu">
+    <div class="buy-head"><span>BUY EQUIPMENT</span><span id="buy-money">$800</span><button id="buy-close" type="button">✕</button></div>
+    <div id="buy-grid"></div>
+    <div id="buy-msg"></div>
+    <div class="buy-foot">Buy time only · Press B or ✕ to close · Click a card to buy</div>
+  </div>
+
+  <div id="scoreboard" style="display:none">
+    <div class="score-title">FOUNDRY LINE — SCORES</div>
+    <div id="score-rows"></div>
+    <div class="score-foot">◆ carries the charge · † down this round</div>
+  </div>
+</div>
+
+<!-- ============ MAIN MENU ============ -->
+<div id="menu" class="menu open">
+  <div class="menu-card">
+    <h1>FOUNDRY <span>LINE</span></h1>
+    <p class="tagline">A round-based tactical FPS in a dusk-lit industrial yard. Five attackers, five defenders, one spark charge — and gunfire where stopping to aim beats spraying.</p>
+    <div class="pick-row">
+      <button type="button" data-mode="match" class="pick picked">MATCH — PLANT / DEFUSE<span>First to 5 rounds · sides swap at half-time</span></button>
+      <button type="button" data-mode="skirmish" class="pick">SKIRMISH — ELIMINATION<span>First to 3 rounds · no charge, pure gunplay</span></button>
+    </div>
+    <div class="pick-row small">
+      <button type="button" data-diff="recruit" class="pick">RECRUIT<span>Slower, less accurate bots</span></button>
+      <button type="button" data-diff="standard" class="pick picked">STANDARD<span>A fair fight</span></button>
+      <button type="button" data-diff="veteran" class="pick">VETERAN<span>Fast reactions, sharp aim</span></button>
+    </div>
+    <button id="deploy-btn" type="button">DEPLOY ▸</button>
+    <div class="howto">
+      <div><b>Objective.</b> Raiders plant the spark charge at Site A or B; Sentinels stop the plant or defuse it. Win by elimination, detonation, defusal — or the clock.</div>
+      <div><b>Economy.</b> Earn money for kills and round wins, spend it in the buy menu (B) on rifles, armour, grenades and defuse kits.</div>
+      <div><b>Gunplay.</b> Headshots deal bonus damage. Spread and recoil grow while moving and firing — crouch, stop, and aim down sights to land shots.</div>
+      <div><b>Bots.</b> Nine bots run lanes, hold angles, investigate gunfire, plant, defuse and retrieve a dropped charge.</div>
+    </div>
+    <div class="controls-grid">
+      <span><b>WASD</b> move</span><span><b>Mouse</b> look</span><span><b>LMB</b> fire</span><span><b>RMB</b> aim</span>
+      <span><b>R</b> reload</span><span><b>1–5 / wheel</b> weapons</span><span><b>F</b> plant / defuse</span><span><b>B</b> buy menu</span>
+      <span><b>Shift</b> walk quietly</span><span><b>Ctrl / C</b> crouch</span><span><b>Space</b> jump</span><span><b>Tab</b> scores</span>
+    </div>
+    <p class="foot">An original game: its own map, art, sounds and names. Runs fully offline — no network requests. Best in desktop Chrome with pointer lock.</p>
+  </div>
+</div>
+
+<!-- ============ PAUSE ============ -->
+<div id="pause-menu" class="menu">
+  <div class="menu-card narrow">
+    <h2>PAUSED</h2>
+    <p class="tagline">The round is frozen while you are away.</p>
+    <button id="resume-btn" type="button" class="big-btn">RESUME ▸</button>
+    <button id="quit-btn" type="button" class="big-btn ghost">QUIT TO MENU</button>
+  </div>
+</div>
+
+<!-- ============ MATCH END ============ -->
+<div id="match-end" class="menu">
+  <div class="menu-card narrow">
+    <h2 id="match-title">VICTORY</h2>
+    <p id="match-sub" class="tagline"></p>
+    <p id="match-stats" class="stats"></p>
+    <button id="play-again-btn" type="button" class="big-btn">PLAY AGAIN ▸</button>
+    <button id="menu-btn" type="button" class="big-btn ghost">MAIN MENU</button>
+  </div>
+</div>
+
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
